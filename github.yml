@@ -1,4 +1,3 @@
----
 - name: Créer un dépôt GitHub et pousser des fichiers
   hosts: localhost
   gather_facts: no
@@ -49,6 +48,12 @@
       args:
         chdir: "{{ playbook_dir }}"
       when: remote_url is failed
+
+    - name: Créer la branche main si elle n'existe pas
+      command: git checkout -b main
+      args:
+        chdir: "{{ playbook_dir }}"
+      ignore_errors: true
 
     - name: Pousser les fichiers vers le dépôt distant
       command: git push -u origin main
