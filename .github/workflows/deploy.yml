@@ -61,10 +61,13 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
           cat ~/.ssh/known_hosts
 
-      - name: Run Ansible playbook
-        run: |
-          ansible --version
-          ansible-playbook deploy.yml -i host.ini -vvv
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v3
+        with:
+          # Required, playbook filepath
+          playbook: deploy.yml
+          # Optional, directory where playbooks live
+          directory: ./
 
       - name: Clean up sensitive files
         if: always()
