@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres
+    container_name: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_HOST: ${DB_HOST}
+    networks:
+      - rocketweb-network
+  atp-back:
+    image: ghcr.io/gsoulat/atp-back-end:latest
+    restart: unless-stopped
+    environment:
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      SECRET_KEY: ${SECRET_KEY}
+      ALGORITHM: ${ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      EMAIL_NAME: ${EMAIL_NAME}
+      EMAIL_PASSWORD: ${EMAIL_PASSWORD}
+      URL_FRONT: ${URL_FRONT}
+    depends_on:
+      - postgres
+    networks:
+      - rocketweb-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.atp-back.entrypoints=web"
+      - "traefik.http.routers.atp-back.rule=Host(`atp-back.berry.ovh`)"
+      - "traefik.http.routers.atp-back.middlewares=redirect-to-https@docker"
+      - "traefik.http.routers.atp-back-secure.entrypoints=websecure"
+      - "traefik.http.routers.atp-back-secure.rule=Host(`atp-back.berry.ovh`)"
+      - "traefik.http.routers.atp-back-secure.tls=true"
+      - "traefik.http.routers.atp-back-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.services.atp-back.loadbalancer.server.port=8001"
+      # Ajout de la définition du middleware de redirection
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+volumes:
+  postgres_data:
+
+networks:
+  rocketweb-network:
+    external: true

@@ -1,0 +1,21 @@
+- name: Install Docker, Docker Compose, and Deploy Stacks
+  hosts: deploy_group
+  gather_facts: yes
+  become: yes
+  remote_user: "{{ USERNAME }}"
+
+  collections:
+    - community.docker
+
+  vars_files:
+    - secrets.yml
+
+
+
+  roles:
+    - update
+    - security
+    - docker
+    - swarm
+    - secrets
+    - deploy

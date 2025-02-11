@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+
+  vars_files:
+    - secrets.yml
+
+  vars:
+    ssh_key_name: "ssh_rocketweb"
+    ssh_key_path: "{{ PRIVATE_KEY }}"
+
+  roles:
+    - known_hosts
+    - ssh_key

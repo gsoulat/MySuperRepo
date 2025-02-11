@@ -1,0 +1,25 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped    
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+    volumes:
+      - prometheus:/prometheus
+      - prom_data:/prometheus
+    networks:
+      - rocketweb-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.berry.ovh`)" # Domaine personnalisé
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+
+networks:
+  rocketweb-network:
+    external: true
+
+volumes:
+  prom_data:

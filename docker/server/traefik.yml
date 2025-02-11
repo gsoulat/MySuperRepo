@@ -1,0 +1,41 @@
+version: "3.8"
+
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:latest
+    restart: always
+    command:
+      - "--api.insecure=true"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.email=gsoulat31@gmail.com"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "443:443"
+      - "80:80"
+      - "8080:8080" # Port du tableau de bord
+    networks:
+      - rocketweb-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - traefik_letsencrypt:/letsencrypt
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.entrypoints=web"
+      - "traefik.http.routers.traefik.rule=Host(`traefik.berry.ovh`)"
+      - "traefik.http.routers.traefik_https.entrypoints=websecure"
+      - "traefik.http.routers.traefik_https.tls=true"
+      # - "traefik.http.routers.traefik.middlewares=auth"
+      # - "traefik.http.middlewares.auth.basicauth.usersfile=/etc/traefik/htpasswd"
+
+networks:
+  rocketweb-network:
+    external: true
+
+volumes:
+  traefik_letsencrypt:

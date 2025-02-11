@@ -1,0 +1,21 @@
+services:
+  watchtower:
+    image: containrrr/watchtower
+    container_name: watchtower
+    networks:
+      - rocketweb-network
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_TZ=Europe/Paris
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_DEBUG=true
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_REVIVE_STOPPED=true
+    command: --interval 30
+    restart: always
+
+networks:
+  rocketweb-network:
+    external: true
+

@@ -1,0 +1,59 @@
+# docker role tasks
+- name: Mise à jour du cache apt et du système
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+    upgrade: full
+
+- name: Installation des dépendances système
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - software-properties-common
+      - python3-pip
+      - python3-venv
+      - python3-full
+      - acl
+      - gnupg
+      - python3-docker
+      - python3-dockerpty
+    state: present
+
+- name: Ajouter la clé GPG Docker
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Ajouter le dépôt Docker
+  apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Installer Docker et Docker Compose
+  apt:
+    name:
+      - docker-ce
+      - docker-compose-plugin
+    state: present
+
+- name: Démarrer et activer le service Docker
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Créer le groupe Docker
+  group:
+    name: docker
+    state: present
+
+- name: Ajouter l'utilisateur au groupe Docker
+  user:
+    name: "{{ USERNAME }}"
+    groups: docker
+    append: yes
+
+- name: Prune everything including unused images
+  command: docker system prune -a -f

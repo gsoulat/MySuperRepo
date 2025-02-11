@@ -1,0 +1,24 @@
+services:
+  komodo:
+    image: komodoplatform/komodo:latest # Image officielle de Komodo
+    container_name: komodo
+    restart: unless-stopped
+    networks:
+      - rocketweb-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.komodo.entrypoints=web"
+      - "traefik.http.routers.komodo.rule=Host(`komodo.berry.ovh`)"
+      - "traefik.http.routers.komodo.middlewares=redirect-to-https@docker"
+      - "traefik.http.routers.komodo-secure.entrypoints=websecure"
+      - "traefik.http.routers.komodo-secure.rule=Host(`komodo.berry.ovh`)"
+      - "traefik.http.routers.komodo-secure.tls=true"
+      - "traefik.http.routers.komodo-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.services.komodo.loadbalancer.server.port=7771" # Port par défaut pour Komodo
+      # Middleware de redirection HTTPS
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+networks:
+  rocketweb-network:
+    external: true

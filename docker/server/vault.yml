@@ -1,0 +1,32 @@
+services:
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    restart: always
+    environment:
+      - ADMIN_TOKEN=mon_token_admin_super_secret
+      - SIGNUPS_ALLOWED=true
+    volumes:
+      - vaultwarden_data:/data
+    networks:
+      - rocketweb-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vault.entrypoints=web"
+      - "traefik.http.routers.vault.rule=Host(`vault.berry.ovh`)"
+      - "traefik.http.routers.vault.middlewares=redirect-to-https@docker"
+      - "traefik.http.routers.vault-secure.entrypoints=websecure"
+      - "traefik.http.routers.vault-secure.rule=Host(`vault.berry.ovh`)"
+      - "traefik.http.routers.vault-secure.tls=true"
+      - "traefik.http.routers.vault-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.services.vault.loadbalancer.server.port=80"
+      # Ajout de la définition du middleware de redirection
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+volumes:
+  vaultwarden_data:
+
+networks:
+  rocketweb-network:
+    external: true

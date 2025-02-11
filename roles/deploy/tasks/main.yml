@@ -1,0 +1,66 @@
+# deploy role tasks
+- name: Créer le réseau overlay rocketweb-network
+  docker_network:
+    name: rocketweb-network
+    driver: overlay
+    attachable: yes
+    state: present
+
+- name: Vérifier la création du réseau
+  command: docker network ls --filter name=rocketweb-network --format "{{ '{{.Name}}' }}"
+  register: network_check
+  changed_when: false
+
+- name: Supprimer le répertoire rocketweb s'il existe
+  file:
+    path: ./rocketweb
+    state: absent
+
+- name: Créer le répertoire rocketweb
+  file:
+    path: ./rocketweb
+    state: directory
+    owner: "{{ USERNAME }}"
+    group: docker
+    mode: "0755"
+
+- name: Copier les sous-dossiers locaux vers rocketweb
+  copy:
+    src: "{{ playbook_dir }}/docker/"
+    dest: "./rocketweb/"
+    mode: 0774
+
+- name: Trouver et déployer les fichiers YAML dans rocketweb
+  block:
+    - name: Trouver les fichiers YAML dans rocketweb
+      find:
+        paths: "./rocketweb"
+        patterns: "*.yml,*.yaml"
+        recurse: yes
+        file_type: file
+      register: found_files
+
+    - name: Déployer les stacks Docker
+      command: docker stack deploy -c {{ item.path }} {{ item.path | dirname | basename }}
+      loop: "{{ found_files.files }}"
+      register: stack_deploy
+      ignore_errors: true
+
+- name: Vérifier le statut des stacks et des services
+  block:
+    - name: Vérifier le statut des stacks
+      command: docker stack ls
+      register: stack_status
+      changed_when: false
+
+    - name: Afficher le statut des stacks
+      debug:
+        var: stack_status.stdout_lines
+
+    - name: Vérifier le statut des services
+      command: docker service ls
+      register: service_status
+
+    - name: Afficher le statut des services
+      debug:
+        var: service_status.stdout_lines

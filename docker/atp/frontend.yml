@@ -1,0 +1,27 @@
+version: "3"
+services:
+  atp-tir:
+    image: ghcr.io/gsoulat/atp-front-end:latest
+    stdin_open: true
+    networks:
+      - rocketweb-network
+    environment:
+      VITE_PATH_IMAGE: ${VITE_PATH_IMAGE}
+      VITE_BACK: ${VITE_BACK}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.atp-tir.entrypoints=web"
+      - "traefik.http.routers.atp-tir.rule=Host(`atp-tir.berry.ovh`)"
+      - "traefik.http.routers.atp-tir.middlewares=redirect-to-https@docker"
+      - "traefik.http.routers.atp-tir-secure.entrypoints=websecure"
+      - "traefik.http.routers.atp-tir-secure.rule=Host(`atp-tir.berry.ovh`)"
+      - "traefik.http.routers.atp-tir-secure.tls=true"
+      - "traefik.http.routers.atp-tir-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.services.atp-tir.loadbalancer.server.port=5173"
+      # Ajout de la définition du middleware de redirection
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+
+networks:
+  rocketweb-network:
+    external: true

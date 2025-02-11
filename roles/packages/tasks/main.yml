@@ -1,0 +1,15 @@
+- name: Installer les paquets essentiels
+  apt:
+    name:
+      - curl
+      - wget
+      - vim
+      - git
+      - htop
+      - net-tools
+      - unzip
+    state: present
+
+- name: Configurer le fuseau horaire
+  timezone:
+    name: Europe/Paris

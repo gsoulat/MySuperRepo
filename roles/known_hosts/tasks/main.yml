@@ -1,0 +1,19 @@
+- name: Supprimer l'empreinte de la clé hôte existante du serveur
+  known_hosts:
+    path: ~/.ssh/known_hosts
+    name: "{{ SERVER_IP }}"
+    state: absent
+  become: false
+
+- name: Récupérer l'empreinte de la clé hôte du serveur
+  command: ssh-keyscan -t {{ ssh_key_types }} {{ SERVER_IP }}
+  register: ssh_keyscan_output
+  changed_when: false
+  become: false
+
+- name: Ajouter l'empreinte de la clé hôte du serveur au fichier known_hosts
+  known_hosts:
+    path: ~/.ssh/known_hosts
+    name: "{{ SERVER_IP }}"
+    key: "{{ ssh_keyscan_output.stdout }}"
+  become: false

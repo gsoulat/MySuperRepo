@@ -1,0 +1,30 @@
+- name: Créer un utilisateur avec privilèges sudo
+  user:
+    name: "{{ USERNAME }}"
+    groups: sudo
+    append: yes
+    state: present
+    password: "{{ user_password | password_hash('sha512') }}"
+    shell: /bin/bash
+
+- name: Créer le répertoire .ssh pour le nouvel utilisateur
+  file:
+    path: "/home/{{ USERNAME }}/.ssh"
+    state: directory
+    owner: "{{ USERNAME }}"
+    group: "{{ USERNAME }}"
+    mode: "0700"
+
+- name: Ajouter la clé publique SSH pour l'utilisateur non-root
+  authorized_key:
+    user: "{{ USERNAME }}"
+    state: present
+    key: "{{ lookup('file', ssh_key_path) }}"
+
+- name: Configurer sudoers sans mot de passe pour le nouvel utilisateur
+  lineinfile:
+    path: /etc/sudoers.d/{{ USERNAME }}
+    line: "{{ USERNAME }} ALL=(ALL) NOPASSWD:ALL"
+    create: yes
+    validate: /usr/sbin/visudo -cf %s
+    mode: "0440"

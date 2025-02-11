@@ -1,0 +1,32 @@
+version: "3.7"
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - rocketweb-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.entrypoints=web"
+      - "traefik.http.routers.minio.rule=Host(`minio.berry.ovh`)"
+      - "traefik.http.routers.minio.middlewares=redirect-to-https@docker"
+      - "traefik.http.routers.minio-secure.entrypoints=websecure"
+      - "traefik.http.routers.minio-secure.rule=Host(`minio.berry.ovh`)"
+      - "traefik.http.routers.minio-secure.tls=true"
+      - "traefik.http.routers.minio-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.services.minio.loadbalancer.server.port=9001"
+      # Ajout de la définition du middleware de redirection
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+volumes:
+  minio_data:
+
+networks:
+  rocketweb-network:
+    external: true

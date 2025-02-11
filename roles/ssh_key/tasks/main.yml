@@ -1,0 +1,29 @@
+- name: Créer une paire de clés SSH privée et publique
+  openssh_keypair:
+    path: "{{ PRIVATE_KEY }}"
+    type: rsa
+    size: 4096
+    force: no
+  become: false
+
+- name: S'assurer que le fichier ~/.ssh/config existe
+  file:
+    path: ~/.ssh/config
+    state: touch
+  become: false
+
+- name: Ajouter ou remplacer la configuration dans ~/.ssh/config
+  blockinfile:
+    path: ~/.ssh/config
+    marker: "# {mark} ANSIBLE MANAGED BLOCK {{ HOST }}"
+    block: |
+      Host {{ HOST }}
+          HostName {{ SERVER_IP }}
+          User {{ USERNAME }}
+          Port 22
+          IdentityFile {{ PRIVATE_KEY }}
+          ForwardAgent yes
+          AddKeysToAgent yes
+          ServerAliveInterval 60
+    create: yes
+  become: false

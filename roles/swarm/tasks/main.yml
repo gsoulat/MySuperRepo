@@ -1,0 +1,23 @@
+# swarm role tasks
+- name: Initialiser Docker Swarm
+  block:
+    - name: Vérifier si Swarm est déjà initialisé
+      shell: docker info | grep -w "Swarm" | awk '{print $2}'
+      register: swarm_status
+      changed_when: false
+
+    - name: Initialiser Docker Swarm si pas déjà fait
+      command: docker swarm init --advertise-addr {{ ansible_default_ipv4.address }}
+      when: swarm_status.stdout == "inactive"
+
+    - name: Récupérer le token pour les workers
+      shell: docker swarm join-token -q worker
+      register: swarm_worker_token
+      when: swarm_status.stdout == "active"
+
+    - name: Afficher la commande pour rejoindre le Swarm
+      debug:
+        msg: |
+          docker swarm join :
+          docker swarm join --token {{ swarm_worker_token.stdout }} {{ SERVER_IP }}:2377
+      when: swarm_status.stdout == "active"

@@ -1,0 +1,47 @@
+---
+- name: Créer un dépôt GitHub et pousser des fichiers
+  hosts: localhost
+  gather_facts: no
+
+  vars_files:
+    - secrets.yml
+
+  tasks:
+    - name: Vérifier si le répertoire est un dépôt Git
+      stat:
+        path: "{{ playbook_dir }}/.git"
+      register: git_repo
+
+    - name: Initialiser un dépôt Git si nécessaire
+      command: git init
+      args:
+        chdir: "{{ playbook_dir }}"
+      when: not git_repo.stat.exists
+
+    - name: Ajouter tous les fichiers au staging area
+      command: git add .
+      args:
+        chdir: "{{ playbook_dir }}"
+
+    - name: Faire un commit initial
+      command: git commit -m "Initial commit"
+      args:
+        chdir: "{{ playbook_dir }}"
+
+    - name: Ajouter le dépôt distant
+      command: >
+        git remote add origin https://{{ GITHUB_USER }}:{{ GITHUB_TOKEN }}@github.com/{{ GITHUB_USER }}/{{ REPO_NAME }}.git
+      args:
+        chdir: "{{ playbook_dir }}"
+
+    - name: Pousser les fichiers vers le dépôt distant
+      command: git push -u origin master
+      args:
+        chdir: "{{ playbook_dir }}"
+      environment:
+        GITHUB_USER: "{{ GITHUB_USER }}"
+        GITHUB_TOKEN: "{{ GITHUB_TOKEN }}"
+
+    - name: Afficher le message de succès
+      debug:
+        msg: "Le dépôt {{ REPO_NAME }} a été créé et les fichiers ont été poussés avec succès."

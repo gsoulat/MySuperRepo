@@ -1,0 +1,112 @@
+---
+- name: Désactiver l'authentification par mot de passe dans sshd_config
+  lineinfile:
+    path: "{{ sshd_config_path }}"
+    regexp: "^#?PasswordAuthentication.*$"
+    line: "PasswordAuthentication no"
+  notify: restart ssh
+
+- name: Désactiver l'authentification root dans sshd_config
+  lineinfile:
+    path: "{{ sshd_config_path }}"
+    regexp: "^#?PermitRootLogin.*$"
+    line: "PermitRootLogin no"
+  notify: restart ssh
+
+- name: Configurer sshd_config pour sécuriser SSH
+  blockinfile:
+    path: "{{ sshd_config_path }}"
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      PubkeyAuthentication yes
+      PermitEmptyPasswords no
+      AddressFamily inet
+      Protocol 2
+      X11Forwarding no
+      ClientAliveInterval 300
+      ClientAliveCountMax 2
+      MaxAuthTries 3
+      LoginGraceTime 60
+  notify: restart ssh
+
+- name: Vérifier si le fichier cloud-init SSH existe
+  stat:
+    path: "{{ cloud_init_sshd_config_path }}"
+  register: cloud_init_conf
+
+- name: Désactiver l'authentification par mot de passe dans cloud-init SSH config
+  lineinfile:
+    path: "{{ cloud_init_sshd_config_path }}"
+    regexp: "^#?PasswordAuthentication.*$"
+    line: "PasswordAuthentication no"
+    create: yes
+  when: cloud_init_conf.stat.exists
+  notify: restart ssh
+
+- name: Force handlers to run now
+  meta: flush_handlers
+
+- name: Installer UFW
+  apt:
+    name: ufw
+    state: present
+
+- name: Configurer les politiques par défaut UFW
+  ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+  loop:
+    - { direction: "incoming", policy: "deny" }
+    - { direction: "outgoing", policy: "allow" }
+
+- name: Configurer les règles UFW
+  ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto | default('tcp') }}"
+  loop:
+    - { rule: "limit", port: 22, proto: "tcp" } # SSH
+    - { rule: "allow", port: 80, proto: "tcp" } # HTTP
+    - { rule: "allow", port: 443, proto: "tcp" } # HTTPS
+
+- name: Activer UFW
+  ufw:
+    state: enabled
+    logging: on
+
+- name: Installer Fail2ban
+  apt:
+    name: fail2ban
+    state: present
+
+- name: Copier jail.conf vers jail.local
+  copy:
+    src: /etc/fail2ban/jail.conf
+    dest: /etc/fail2ban/jail.local
+    remote_src: yes
+    force: no
+
+- name: Configurer Fail2ban
+  blockinfile:
+    path: /etc/fail2ban/jail.local
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    block: |
+      [sshd]
+      enabled = true
+      port = ssh
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 3
+      findtime = 300
+      bantime = 3600
+  notify: restart fail2ban
+
+- name: S'assurer que tous les services sont démarrés
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: yes
+  loop:
+    - ssh
+    - fail2ban
+    - ufw

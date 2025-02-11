@@ -1,0 +1,21 @@
+version: "3.3"
+services:
+  agent:
+    ports:
+      - "9001:9001"
+    container_name: portainer_agent
+    restart: unless-stopped
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "/var/lib/docker/volumes:/var/lib/docker/volumes"
+    image: "portainer/agent:latest"
+    networks:
+      - rocketweb-network
+
+volumes:
+  portainer_data:
+    driver: local
+
+networks:
+  rocketweb-network:
+    external: true
