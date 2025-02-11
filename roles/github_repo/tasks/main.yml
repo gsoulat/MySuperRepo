@@ -1,3 +1,18 @@
 ---
+- name: Vérifier la présence du chemin de la clé SSH
+  fail:
+    msg: "Le chemin de la clé SSH privée (PRIVATE_KEY) est requis"
+  when: PRIVATE_KEY is not defined or PRIVATE_KEY | length == 0
+
+- name: Vérifier l'existence du fichier de clé SSH
+  stat:
+    path: "{{ PRIVATE_KEY | expanduser }}"
+  register: ssh_key_file
+
+- name: Vérifier si le fichier de clé SSH existe
+  fail:
+    msg: "Le fichier de clé SSH n'existe pas à l'emplacement spécifié : {{ PRIVATE_KEY }}"
+  when: not ssh_key_file.stat.exists
+
 - import_tasks: create_repo.yml
 - import_tasks: manage_secrets.yml
