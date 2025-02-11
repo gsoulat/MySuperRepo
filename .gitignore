@@ -4,3 +4,4 @@ python/*
 __pycache__/*
 .DS_Store
 *.pyc
+templates/*

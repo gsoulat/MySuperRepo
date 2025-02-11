@@ -36,7 +36,7 @@ run_initial_playbook() {
 
 # Fonction pour exécuter setup.yml
 run_setup_playbook() {
-    echo "Configuration des known_hosts pour l'IP $SERVER_IP..."
+    echo "Exécution du playbook setup.yml..."
     ansible-playbook setup.yml -i hosts.ini
     if [ $? -ne 0 ]; then
         echo "Erreur lors de la configuration des known_hosts."
@@ -54,12 +54,23 @@ run_deploy_playbook() {
     fi
 }
 
+# Fonction pour exécuter github.yml
+run_github_playbook() {
+    echo "Exécution du playbook github.yml..."
+    ansible-playbook github.yml -i hosts.ini
+    if [ $? -ne 0 ]; then
+        echo "Erreur lors de l'exécution du playbook github.yml."
+        exit 1
+    fi
+}
+
 # Fonction pour exécuter tout dans l'ordre
 run_all() {
     if check_secrets_file; then
         run_initial_playbook
         run_setup_playbook
         run_deploy_playbook
+        run_github_playbook
         echo "C'est fini ! Le script se terminera dans 15 secondes..."
         sleep 15
     else
@@ -73,7 +84,8 @@ while true; do
     echo "1 : Laissez RocketWeb faire"
     echo "2 : Créer une clé SSH"
     echo "3 : Déployer à nouveau"
-    echo "4 : Quitter"
+    echo "4 : Créer un repo GitHub + secrets"
+    echo "5 : Quitter"
     read CHOICE
 
     case $CHOICE in
@@ -87,11 +99,14 @@ while true; do
             run_deploy_playbook
             ;;
         4)
+            run_github_playbook
+            ;;
+        5)
             echo "Au revoir !"
             exit 0
             ;;
         *)
-            echo "Option non valide. Veuillez choisir entre 1 et 4."
+            echo "Option non valide. Veuillez choisir entre 1 et 5."
             ;;
     esac
 done
