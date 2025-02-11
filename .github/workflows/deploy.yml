@@ -27,15 +27,23 @@ jobs:
           SERVER_IP: ${{ secrets.SERVER_IP }}
           DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
           HOST: ${{ secrets.HOST }}
-          PRIVATE_KEY: ~/.ssh/private_key
           USERNAME: ${{ secrets.USERNAME }}
           CLOUD_INIT_SSHD_CONFIG_PATH: ${{ secrets.CLOUD_INIT_SSHD_CONFIG_PATH }}
           SSHD_CONFIG_PATH: ${{ secrets.SSHD_CONFIG_PATH }}
           SSH_KEY_TYPES: ${{ secrets.SSH_KEY_TYPES }}
           EOF
 
+      - name: Create host.ini
+        run: |
+          cat > host.ini << EOF
+          [deploy_group]
+          target ansible_host=${{ secrets.SERVER_IP }} ansible_user=${{ secrets.USERNAME }} ansible_ssh_private_key_file=~/.ssh/private_key
+          EOF
+
       - name: Create SSH directory
-        run: mkdir -p ~/.ssh
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
 
       - name: Install SSH key
         run: |
@@ -43,12 +51,15 @@ jobs:
           chmod 600 ~/.ssh/private_key
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
 
+      - name: Test SSH connection
+        run: ssh -i ~/.ssh/private_key -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} 'echo "Connection successful"'
+
       - name: Run Ansible playbook
-        run: |
-          ansible-playbook deploy.yml -i host.ini
+        run: ansible-playbook deploy.yml -i host.ini -vv
 
       - name: Clean up sensitive files
         if: always()
         run: |
           rm -f ~/.ssh/private_key
           rm -f secrets.yml
+          rm -f host.ini
