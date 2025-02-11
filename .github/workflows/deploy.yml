@@ -6,6 +6,10 @@ on:
   workflow_dispatch:
 
 jobs:
+  ansible-lint:
+      uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@main
+      with:
+        args: '-p playbooks'
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -61,13 +65,16 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
           cat ~/.ssh/known_hosts
 
-      - name: Run playbook
-        uses: dawidd6/action-ansible-playbook@v3
-        with:
-          # Required, playbook filepath
-          playbook: deploy.yml
-          # Optional, directory where playbooks live
-          directory: ./
+      - name: Install Ansible
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
+
+      - name: Run Ansible Playbook
+        run: |
+          ansible-playbook -i deploy.yml hosts.ini
+
 
       - name: Clean up sensitive files
         if: always()
