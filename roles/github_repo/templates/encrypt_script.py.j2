@@ -1,0 +1,15 @@
+import sys
+import json
+import base64
+from nacl import encoding, public
+
+def encrypt_secret(public_key_b64, secret_value):
+    public_key = public.PublicKey(base64.b64decode(public_key_b64), encoding.RawEncoder)
+    sealed_box = public.SealedBox(public_key)
+    encrypted = sealed_box.encrypt(secret_value.encode('utf-8'))
+    return base64.b64encode(encrypted).decode('utf-8')
+
+if __name__ == '__main__':
+    public_key_b64 = sys.argv[1]
+    secret_value = sys.argv[2]
+    print(encrypt_secret(public_key_b64, secret_value))

@@ -1,0 +1,62 @@
+---
+- name: Vérifier si le répertoire est un dépôt Git
+  stat:
+    path: "{{ playbook_dir }}/.git"
+  register: git_repo
+
+- name: Initialiser un dépôt Git si nécessaire
+  command: git init
+  args:
+    chdir: "{{ playbook_dir }}"
+  when: not git_repo.stat.exists
+
+- name: Configurer la branche par défaut
+  command: git config --local init.defaultBranch main
+  args:
+    chdir: "{{ playbook_dir }}"
+
+- name: Ajouter tous les fichiers au staging area
+  command: git add .
+  args:
+    chdir: "{{ playbook_dir }}"
+
+- name: Faire un commit initial
+  command: git commit -m "Initial commit"
+  args:
+    chdir: "{{ playbook_dir }}"
+  ignore_errors: true
+
+- name: Vérifier si la distante origin existe
+  command: git remote get-url origin
+  args:
+    chdir: "{{ playbook_dir }}"
+  ignore_errors: true
+  register: remote_url
+
+- name: Mettre à jour l'URL de la distante origin
+  command: >
+    git remote set-url origin https://{{ GITHUB_USER }}:{{ GITHUB_TOKEN }}@github.com/{{ GITHUB_USER }}/{{ REPO_NAME }}.git
+  args:
+    chdir: "{{ playbook_dir }}"
+  when: remote_url is success
+
+- name: Ajouter la distante origin
+  command: >
+    git remote add origin https://{{ GITHUB_USER }}:{{ GITHUB_TOKEN }}@github.com/{{ GITHUB_USER }}/{{ REPO_NAME }}.git
+  args:
+    chdir: "{{ playbook_dir }}"
+  when: remote_url is failed
+
+- name: S'assurer d'être sur la branche main
+  command: git checkout main
+  args:
+    chdir: "{{ playbook_dir }}"
+  ignore_errors: true
+
+- name: Pousser les fichiers vers le dépôt distant
+  command: git push -u origin main
+  args:
+    chdir: "{{ playbook_dir }}"
+  environment:
+    GITHUB_USER: "{{ GITHUB_USER }}"
+    GITHUB_TOKEN: "{{ GITHUB_TOKEN }}"

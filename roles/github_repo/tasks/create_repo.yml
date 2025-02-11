@@ -1,0 +1,14 @@
+---
+- name: Créer le dépôt sur GitHub
+  uri:
+    url: "https://api.github.com/user/repos"
+    method: POST
+    body_format: json
+    body:
+      name: "{{ REPO_NAME }}"
+      private: false
+    headers:
+      Authorization: "Bearer {{ GITHUB_TOKEN }}"
+      Accept: "application/vnd.github.v3+json"
+    status_code: [201, 422]
+  register: github_repo
