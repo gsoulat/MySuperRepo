@@ -17,8 +17,78 @@
         headers:
           Authorization: "Bearer {{ GITHUB_TOKEN }}"
           Accept: "application/vnd.github.v3+json"
-        status_code: [201, 422] # 422 si le repo existe déjà
+        status_code: [201, 422]
       register: github_repo
+
+    - name: Récupérer la clé publique du dépôt
+      uri:
+        url: "https://api.github.com/repos/{{ GITHUB_USER }}/{{ REPO_NAME }}/actions/secrets/public-key"
+        method: GET
+        headers:
+          Authorization: "Bearer {{ GITHUB_TOKEN }}"
+          Accept: "application/vnd.github.v3+json"
+        status_code: 200
+      register: public_key_response
+
+    - name: Créer un script Python temporaire pour le chiffrement
+      copy:
+        content: |
+          import sys
+          import json
+          import base64
+          from nacl import encoding, public
+
+          def encrypt_secret(public_key_b64, secret_value):
+              public_key = public.PublicKey(base64.b64decode(public_key_b64), encoding.RawEncoder)
+              sealed_box = public.SealedBox(public_key)
+              encrypted = sealed_box.encrypt(secret_value.encode('utf-8'))
+              return base64.b64encode(encrypted).decode('utf-8')
+
+          if __name__ == '__main__':
+              public_key_b64 = sys.argv[1]
+              secret_value = sys.argv[2]
+              print(encrypt_secret(public_key_b64, secret_value))
+        dest: "{{ playbook_dir }}/encrypt_secret.py"
+        mode: '0700'
+      register: encrypt_script
+
+    - name: Installer les dépendances Python requises
+      pip:
+        name: 
+          - pynacl
+        state: present
+
+    - name: Installer les dépendances Python requises
+      pip:
+        name: cryptography
+        state: present
+
+    - name: Préparer le dictionnaire des secrets
+      set_fact:
+        secrets_to_add:
+          SERVER_IP: "{{ SERVER_IP }}"
+          DOMAIN_NAME: "{{ DOMAIN_NAME }}"
+          HOST: "{{ HOST }}"
+
+    - name: Chiffrer et ajouter chaque secret
+      uri:
+        url: "https://api.github.com/repos/{{ GITHUB_USER }}/{{ REPO_NAME }}/actions/secrets/{{ item.key }}"
+        method: PUT
+        headers:
+          Authorization: "Bearer {{ GITHUB_TOKEN }}"
+          Accept: "application/vnd.github.v3+json"
+        body_format: json
+        body:
+          encrypted_value: '{{ lookup(''pipe'', ''python3 '' + encrypt_script.dest + '' "'' + public_key_response.json.key + ''" "'' + item.value + ''"'') }}'
+          key_id: "{{ public_key_response.json.key_id }}"
+        status_code: [201, 204]
+      loop: "{{ secrets_to_add | dict2items }}"
+      no_log: true
+
+    - name: Supprimer le script Python temporaire
+      file:
+        path: "{{ playbook_dir }}/encrypt_secret.py"
+        state: absent
 
     - name: Vérifier si le répertoire est un dépôt Git
       stat:
@@ -84,4 +154,4 @@
 
     - name: Afficher le message de succès
       debug:
-        msg: "Le dépôt {{ REPO_NAME }} a été créé/mis à jour et les fichiers ont été poussés avec succès."
+        msg: "Le dépôt {{ REPO_NAME }} a été créé/mis à jour avec les secrets et les fichiers ont été poussés avec succès."
