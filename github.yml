@@ -32,7 +32,7 @@
     - name: Vérifier si la distante origin existe
       command: git remote get-url origin
       args:
-        chdir: "{{ LOCAL_DIR }}"
+        chdir: "{{ playbook_dir }}"
       ignore_errors: yes
       register: remote_url
 
@@ -40,20 +40,20 @@
       command: >
         git remote set-url origin https://{{ GITHUB_USER }}:{{ GITHUB_TOKEN }}@github.com/{{ GITHUB_USER }}/{{ REPO_NAME }}.git
       args:
-        chdir: "{{ LOCAL_DIR }}"
+        chdir: "{{ playbook_dir }}"
       when: remote_url is success
 
     - name: Ajouter la distante origin
       command: >
         git remote add origin https://{{ GITHUB_USER }}:{{ GITHUB_TOKEN }}@github.com/{{ GITHUB_USER }}/{{ REPO_NAME }}.git
       args:
-        chdir: "{{ LOCAL_DIR }}"
+        chdir: "{{ playbook_dir }}"
       when: remote_url is failed
 
     - name: Pousser les fichiers vers le dépôt distant
       command: git push -u origin master
       args:
-        chdir: "{{ LOCAL_DIR }}"
+        chdir: "{{ playbook_dir }}"
       environment:
         GITHUB_USER: "{{ GITHUB_USER }}"
         GITHUB_TOKEN: "{{ GITHUB_TOKEN }}"
