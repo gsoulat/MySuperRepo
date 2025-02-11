@@ -28,6 +28,10 @@ jobs:
           DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
           HOST: ${{ secrets.HOST }}
           PRIVATE_KEY: ~/.ssh/private_key
+          USERNAME: ${{ secrets.USERNAME }}
+          CLOUD_INIT_SSHD_CONFIG_PATH: ${{ secrets.CLOUD_INIT_SSHD_CONFIG_PATH }}
+          SSHD_CONFIG_PATH: ${{ secrets.SSHD_CONFIG_PATH }}
+          SSH_KEY_TYPES: ${{ secrets.SSH_KEY_TYPES }}
           EOF
 
       - name: Create SSH directory
