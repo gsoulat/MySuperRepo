@@ -27,6 +27,7 @@
       command: git commit -m "Initial commit"
       args:
         chdir: "{{ playbook_dir }}"
+      ignore_errors: true
 
     - name: Ajouter le dépôt distant
       command: >
