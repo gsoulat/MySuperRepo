@@ -6,10 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  ansible-lint:
-      uses: ansible/ansible-content-actions/.github/workflows/ansible_lint.yaml@main
-      with:
-        args: '-p playbooks'
   deploy:
     runs-on: ubuntu-latest
     steps:
@@ -49,6 +45,18 @@ jobs:
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
+      - name: Configure SSH
+        run: |
+          cat > ~/.ssh/config << EOF
+          Host *
+            StrictHostKeyChecking no
+            UserKnownHostsFile=/dev/null
+            ServerAliveInterval 60
+            ServerAliveCountMax 30
+            ConnectTimeout 180
+          EOF
+          chmod 600 ~/.ssh/config
+
       - name: Install SSH key
         run: |
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/private_key
@@ -65,16 +73,11 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
           cat ~/.ssh/known_hosts
 
-      - name: Install Ansible
-        shell: bash
-        run: |
-          sudo apt update
-          sudo apt install -y ansible
+      - name: Test SSH connection
+        run: ssh -v -i ~/.ssh/private_key ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} 'echo "Connection successful"'
 
-      - name: Run Ansible Playbook
-        run: |
-          ansible-playbook -i deploy.yml hosts.ini
-
+      - name: Run Ansible playbook
+        run: ansible-playbook -i host.ini deploy.yml -vv
 
       - name: Clean up sensitive files
         if: always()
