@@ -61,10 +61,6 @@ jobs:
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
           cat ~/.ssh/known_hosts
 
-      - name: Test SSH connection with verbose output
-        run: |
-          ssh -v -i ~/.ssh/private_key -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} 'echo "Connection successful"'
-
       - name: Run Ansible playbook
         run: |
           ansible --version
