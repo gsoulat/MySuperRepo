@@ -6,6 +6,20 @@
     - secrets.yml
 
   tasks:
+    - name: Créer le dépôt sur GitHub
+      uri:
+        url: "https://api.github.com/user/repos"
+        method: POST
+        body_format: json
+        body:
+          name: "{{ REPO_NAME }}"
+          private: false
+        headers:
+          Authorization: "Bearer {{ GITHUB_TOKEN }}"
+          Accept: "application/vnd.github.v3+json"
+        status_code: [201, 422] # 422 si le repo existe déjà
+      register: github_repo
+
     - name: Vérifier si le répertoire est un dépôt Git
       stat:
         path: "{{ playbook_dir }}/.git"
@@ -16,6 +30,11 @@
       args:
         chdir: "{{ playbook_dir }}"
       when: not git_repo.stat.exists
+
+    - name: Configurer la branche par défaut
+      command: git config --local init.defaultBranch main
+      args:
+        chdir: "{{ playbook_dir }}"
 
     - name: Ajouter tous les fichiers au staging area
       command: git add .
@@ -49,8 +68,8 @@
         chdir: "{{ playbook_dir }}"
       when: remote_url is failed
 
-    - name: Créer la branche main si elle n'existe pas
-      command: git checkout -b main
+    - name: S'assurer d'être sur la branche main
+      command: git checkout main
       args:
         chdir: "{{ playbook_dir }}"
       ignore_errors: true
@@ -65,4 +84,4 @@
 
     - name: Afficher le message de succès
       debug:
-        msg: "Le dépôt {{ REPO_NAME }} a été mis à jour et les fichiers ont été poussés avec succès."
+        msg: "Le dépôt {{ REPO_NAME }} a été créé/mis à jour et les fichiers ont été poussés avec succès."
