@@ -51,7 +51,7 @@
       when: remote_url is failed
 
     - name: Pousser les fichiers vers le dépôt distant
-      command: git push -u origin master
+      command: git push -u origin main
       args:
         chdir: "{{ playbook_dir }}"
       environment:
