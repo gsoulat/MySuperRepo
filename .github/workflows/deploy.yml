@@ -69,17 +69,6 @@ jobs:
           echo "SSH key content (first line):"
           head -n 1 ~/.ssh/private_key
 
-      - name: Network Debug
-        run: |
-          echo "Testing basic connectivity..."
-          ping -c 4 ${{ secrets.SERVER_IP }}
-
-          echo "Testing port 22..."
-          nc -zv ${{ secrets.SERVER_IP }} 22
-
-          echo "Checking route..."
-          traceroute ${{ secrets.SERVER_IP }}
-
       - name: SSH Debug
         run: |
           echo "SSH debug output..."
