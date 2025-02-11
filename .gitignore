@@ -1,3 +1,4 @@
 secrets/*
 secrets.yml
 python/*
+__pycache__/*
