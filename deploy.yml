@@ -2,6 +2,7 @@
   hosts: deploy_group
   gather_facts: yes
   become: yes
+  become_method: sudo
   remote_user: "{{ USERNAME }}"
 
   collections:
@@ -9,8 +10,6 @@
 
   vars_files:
     - secrets.yml
-
-
 
   roles:
     - update
