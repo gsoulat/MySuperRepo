@@ -1,0 +1,50 @@
+name: Deploy with Ansible
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+
+      - name: Create secrets.yml
+        run: |
+          cat > secrets.yml << EOF
+          SERVER_IP: ${{ secrets.SERVER_IP }}
+          DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }}
+          HOST: ${{ secrets.HOST }}
+          PRIVATE_KEY: ~/.ssh/private_key
+          EOF
+
+      - name: Create SSH directory
+        run: mkdir -p ~/.ssh
+
+      - name: Install SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/private_key
+          chmod 600 ~/.ssh/private_key
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Run Ansible playbook
+        run: |
+          ansible-playbook deploy.yml
+
+      - name: Clean up sensitive files
+        if: always()
+        run: |
+          rm -f ~/.ssh/private_key
+          rm -f secrets.yml
